@@ -11,6 +11,11 @@
   "description": "",
   "dependencies": {
     "dayjs": "^1.11.13",
-    "voicemeeter-connector": "github:ilikestohack/voicemeeter-connector"
+    "test": "file:",
+    "voicemeeter-connector": "github:ilikestohack/voicemeeter-connector",
+    "xtouch-control": "^1.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.18"
   }
 }
