@@ -1,5 +1,4 @@
 import dayjs from "dayjs";
-// import { Voicemeeter } from "./voicemeeter-connector/src/index";
 import { Voicemeeter } from "voicemeeter-connector";
 import XTouchController from "xtouch-control";
 import { ControlType } from "xtouch-control";
@@ -188,7 +187,7 @@ function setBusNameLcds(vm: Voicemeeter, controller: XTouchController) {
 }
 
 async function run() {
-	let vm = await Voicemeeter.init();
+	const vm = await Voicemeeter.init();
 	const controller = new XTouchController();
 
 	// Connect to your voicemeeter client
@@ -293,6 +292,7 @@ async function run() {
 		},
 	};
 	controller.on("channelAction", async (e) => {
+		console.log("Channel Action", e);
 		if (e.state === "keyDown") {
 			switch (e.action) {
 				case "select": {
@@ -403,6 +403,12 @@ async function run() {
 									.setButton("MUTE", "OFF");
 							}
 						}
+					}
+					break;
+				}
+				case "pedal1": {
+					for (let channel = 0; channel < 8; channel++) {
+						vm.parameters.Bus(channel).Mute.set(1);
 					}
 					break;
 				}
