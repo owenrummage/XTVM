@@ -12,6 +12,7 @@
   "dependencies": {
     "dayjs": "^1.11.13",
     "test": "file:",
+    "usb": "^2.15.0",
     "voicemeeter-connector": "github:ilikestohack/voicemeeter-connector",
     "xtouch-control": "^1.2.3"
   },

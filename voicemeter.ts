@@ -1,4 +1,5 @@
 import dayjs from "dayjs";
+import { usb } from "usb";
 import { Voicemeeter } from "voicemeeter-connector";
 import XTouchController from "xtouch-control";
 import { ControlType } from "xtouch-control";
@@ -82,6 +83,8 @@ function setLcds(vm: Voicemeeter, controller: XTouchController) {
 }
 
 let selectedBus = 0;
+let lastSelectedBus = 0;
+let hasBusSelected = false;
 
 let functionMode: "BUSSES" | "OUTPUTS" | "INPUTS" = "BUSSES";
 
@@ -186,9 +189,25 @@ function setBusNameLcds(vm: Voicemeeter, controller: XTouchController) {
 	// controller.channel(1).setScreen("TOP", busLabel);
 }
 
+let connected = true;
+function attachDisconnectHandler() {
+	usb.on("detach", (device: usb.Device) => {
+		if (
+			device.deviceDescriptor.idVendor === 5015 &&
+			device.deviceDescriptor.idProduct === 177
+		) {
+			// We disconnected an xtouch
+			connected = false;
+			process.exit(0);
+		}
+	});
+}
+
 async function run() {
 	const vm = await Voicemeeter.init();
 	const controller = new XTouchController();
+
+	attachDisconnectHandler();
 
 	// Connect to your voicemeeter client
 	vm.connect();
@@ -423,6 +442,8 @@ async function run() {
 		const functionMap = {
 			BUSSES: (index: number) => {
 				selectBus(vm, index);
+				hasBusSelected = true;
+				lastSelectedBus = selectedBus;
 				selectedBus = index;
 				setBusNameLcds(vm, controller);
 				setBusSends(vm, controller);
@@ -441,6 +462,13 @@ async function run() {
 
 		if (key.action.startsWith("F")) {
 			const index = parseInt(key.action.substring(1)) - 1; // Extract index from F key
+			if (hasBusSelected && selectedBus === index) {
+				hasBusSelected = false;
+				vm.parameters.Bus(index).Sel.set(0);
+				const button = `F${index + 1}` as ControlType;
+				controller.right().setControlButton(button, "BLINK");
+				return;
+			}
 			if (index >= 0 && index < 8) {
 				setBusLeds(controller, key.action as ControlType);
 				functionMap[functionMode]?.(index);
@@ -467,30 +495,117 @@ async function run() {
 	});
 
 	vm.attachChangeEvent(() => {
+		console.log("Voicemeeter sent change event!");
 		checkStripFaders(vm, controller);
 		setLcds(vm, controller);
 		if (functionMode === "BUSSES") setBusModeStripMutes(vm, controller);
 	});
 
-	while (true) {
+	const vuType = 1;
+	while (connected) {
 		// Update VU Meters
 		for (let channel = 0; channel < 8; channel++) {
-			const vChannel = channel * 2;
-			const vuMeterL = vm.getLevel(1, vChannel);
-			const vuMeterR = vm.getLevel(1, vChannel + 1);
-
 			let meterState = 0;
+			let vuMeterL = 0;
+			let vuMeterR = 0;
 
-			if (vuMeterL > vuMeterR) meterState = vuMeterL;
-			else meterState = vuMeterR;
+			if (channel < 5) {
+				// Channels 0-4: use stereo L/R
+				const vChannel = channel * 2;
+				vuMeterL = vm.getLevel(vuType, vChannel);
+				vuMeterR = vm.getLevel(vuType, vChannel + 1);
+				meterState = Math.max(vuMeterL, vuMeterR);
+			} else {
+				// Channels 5-7: use 8 levels and take the highest
+				const vChannel = 10 + (channel - 5) * 8;
+				let maxLevel = 0;
+				for (let i = 0; i < 8; i++) {
+					const level = vm.getLevel(vuType, vChannel + i);
+					if (level > maxLevel) maxLevel = level;
+				}
+				meterState = maxLevel;
+				vuMeterL = meterState;
+				vuMeterR = meterState;
+			}
 
 			const mappedValue = Math.round(
 				Math.max(0, Math.min(8, Math.pow(meterState, 0.5) * 8))
 			);
 
 			controller.channel(channel + 1).setMeter(mappedValue);
+			// console.log(
+			// 	`Setting c${channel + 1} to ${mappedValue} with vC${vChannel}/vC${
+			// 		vChannel + 1
+			// 	} as ${vuMeterL}/${vuMeterR}`
+			// );
 		}
 		await new Promise((resolve) => setTimeout(resolve, 10));
 	}
 }
-run();
+// run();
+
+let hasXTouch = false;
+function checkForUSB(device?: usb.Device): boolean {
+	if (hasXTouch) return false;
+
+	if (device) {
+		if (
+			device.deviceDescriptor.idVendor === 5015 &&
+			device.deviceDescriptor.idProduct === 177
+		) {
+			// We have an xtouch
+			hasXTouch = true;
+			return true;
+		}
+	} else {
+		for (const device of usb.getDeviceList()) {
+			if (
+				device.deviceDescriptor.idVendor === 5015 &&
+				device.deviceDescriptor.idProduct === 177
+			) {
+				// We have an xtouch
+				hasXTouch = true;
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+if (checkForUSB()) {
+	run();
+	console.log("XTouch USB Found!");
+} else {
+	console.log("No XTouch USB Found, adding attach listener!");
+	usb.on("attach", (device: usb.Device) => {
+		if (checkForUSB(device)) {
+			console.log("XTouch USB Found!");
+			run();
+		}
+	});
+}
+
+/*
+    {
+    busNumber: 1,
+    deviceAddress: 20,
+    deviceDescriptor: {
+      bLength: 18,
+      bDescriptorType: 1,
+      bcdUSB: 512,
+      bDeviceClass: 0,
+      bDeviceSubClass: 0,
+      bDeviceProtocol: 0,
+      bMaxPacketSize0: 64,
+      idVendor: 5015,
+      idProduct: 177,
+      bcdDevice: 290,
+      iManufacturer: 1,
+      iProduct: 2,
+      iSerialNumber: 3,
+      bNumConfigurations: 1
+    },
+    portNumbers: [ 7, 3 ]
+  },
+*/
