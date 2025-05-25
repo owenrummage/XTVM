@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "temp.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "tsx watch voicemeter.ts"
   },
   "keywords": [],
   "author": "",
@@ -11,7 +11,10 @@
   "description": "",
   "dependencies": {
     "dayjs": "^1.11.13",
+    "nodemon": "^3.1.10",
     "test": "file:",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
     "voicemeeter-connector": "github:ilikestohack/voicemeeter-connector",
     "xtouch-control": "^1.2.3"
   },

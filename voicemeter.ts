@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { Voicemeeter } from "voicemeeter-connector";
+import { Voicemeeter } from "./voicemeeter-connector/src/index";
 import XTouchController from "xtouch-control";
 import { ControlType } from "xtouch-control";
 
