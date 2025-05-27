@@ -9,7 +9,7 @@ import { vuMeterStripsTask } from "../helpers/vmVUMeters";
 let selectedBus = 0;
 let hasBusSelected = false;
 
-const stripFaderStates: Record<number, number> = {
+let stripFaderStates: Record<number, number> = {
 	1: 0,
 	2: 0,
 	3: 0,
@@ -91,6 +91,22 @@ function refreshFromVM() {
 		controller.channel(i + 1).setScreen("BOTTOM", label);
 	}
 
+	// Get selected bus
+	setFLeds();
+	for (let i = 0; i < 8; i++) {
+		const isSelected = vm.parameters.Bus(i).Sel.get() === 1;
+		console.log(i, isSelected, "SB");
+		if (isSelected) {
+			setFLeds(("F" + (i + 1)) as ControlType);
+		}
+		if (!isSelected && selectedBus === i) {
+			const button = `F${i + 1}` as ControlType;
+
+			controller.right().setControlButton(button, "BLINK");
+		}
+	}
+
+	console.log("Setting faders");
 	checkStripFaders();
 }
 
@@ -307,6 +323,7 @@ async function channelActionListener(e) {
 function start() {
 	controller.right().setControlButton("Busses", "SOLID");
 
+	setFLeds(("F" + (selectedBus + 1)) as ControlType);
 	vuMeterStripsTask(true);
 	refreshFromVM();
 
@@ -325,6 +342,19 @@ function stop() {
 	controller.removeListener("fade", fadeListener);
 	controller.removeListener("channelAction", channelActionListener);
 	vmEventEmitter.removeListener("change", refreshFromVM);
+
+	setFLeds();
+
+	stripFaderStates = {
+		1: 0,
+		2: 0,
+		3: 0,
+		4: 0,
+		5: 0,
+		6: 0,
+		7: 0,
+		8: 0,
+	};
 }
 
 const layer: BaseLayer = {

@@ -1,7 +1,7 @@
 import { ControlType } from "xtouch-control";
 import { controller, vm } from "..";
 
-export function setFLeds(input: ControlType) {
+export function setFLeds(input?: ControlType) {
 	controller.right().setControlButton(`F1`, "OFF");
 	controller.right().setControlButton(`F2`, "OFF");
 	controller.right().setControlButton(`F3`, "OFF");
@@ -11,12 +11,17 @@ export function setFLeds(input: ControlType) {
 	controller.right().setControlButton(`F7`, "OFF");
 	controller.right().setControlButton(`F8`, "OFF");
 
-	controller.right().setControlButton(input, "SOLID");
+	if (input) controller.right().setControlButton(input, "SOLID");
 }
 
 export function convertToDB(value: number): number {
 	// Convert 0-127 to -60 to +12
 	return (value / 127) * (12 - -60) + -60;
+}
+
+export function convertToPercent(value: number): number {
+	// Convert 0-127 to 0-100
+	return (value / 127) * 100;
 }
 
 export function convertFromDB(value: number): number {
