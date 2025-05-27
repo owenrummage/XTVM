@@ -8,12 +8,10 @@ import XTouchControl from "xtouch-control";
 import { BaseLayer } from "./globals";
 import { EventEmitter } from "stream";
 
+export { config } from "./config";
+
 let controller: XTouchControl;
 let vm: Voicemeeter;
-
-export const config = {
-	vuType: 1,
-};
 
 let activeLayer: BaseLayer;
 
