@@ -1,6 +1,6 @@
 import { convertFromDB } from "./vmHelpers";
 import { controller, vm } from "..";
-import { FADER_TYPES } from "./vmFadeListener";
+import { FADER_TYPES } from "./voicemeeterConstantsAndTypes";
 
 let faderStates: Record<number, number>;
 

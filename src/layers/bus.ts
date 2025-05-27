@@ -2,12 +2,11 @@ import { ControlType } from "xtouch-control";
 import { config, controller, vm, vmEventEmitter } from "..";
 import { BaseLayer } from "../globals";
 import { selectBus, setFLeds } from "../helpers/vmHelpers";
-import { VoicemeeterChannelNames } from "../helpers/voicemeeterConstantsAndTypes";
+import { FADER_TYPES, VoicemeeterChannelNames } from "../helpers/voicemeeterConstantsAndTypes";
 import dayjs from "dayjs";
 import { vuMeterStripsTask } from "../helpers/vmVUMeters";
 import { resetFaderStates } from "../helpers/vmFaderChecks";
 import {
-	FADER_TYPES,
 	runConfiguredFaderChecks,
 	setFaderTypes,
 	setupVMFadeInputListener,

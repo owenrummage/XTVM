@@ -1,16 +1,12 @@
 import { controller, vm } from "..";
 import { checkLeftFaders, checkMainFader } from "./vmFaderChecks";
 import { convertToDB } from "./vmHelpers";
+import { FADER_TYPES } from "./voicemeeterConstantsAndTypes";
 
 /*
 This can be used to map fader inputs to voicemeeter strips/busses
 To use this first setFaderTypes() then add the fadeListener
 */
-
-export enum FADER_TYPES {
-	BUS,
-	STRIP,
-}
 
 // Configured fader types and main fader channel variables
 let leftFadersType: FADER_TYPES;

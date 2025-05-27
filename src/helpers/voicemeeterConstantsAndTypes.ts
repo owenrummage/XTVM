@@ -8,3 +8,8 @@ export enum VoicemeeterChannelNames {
 	B2 = 6,
 	B3 = 7,
 }
+
+export enum FADER_TYPES {
+	BUS,
+	STRIP,
+}
