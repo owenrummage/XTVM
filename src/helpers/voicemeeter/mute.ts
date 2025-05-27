@@ -1,7 +1,7 @@
 import dayjs from "dayjs";
 import { controller, vm } from "../..";
-import { getLeftFadersType } from "./vmFadeListener";
-import { FADER_TYPES } from "./voicemeeterConstantsAndTypes";
+import { getLeftFadersType } from "./fadeListener";
+import { FADER_TYPES } from "./constantsAndTypes";
 
 function getMuteByType(type: FADER_TYPES, channel: number) {
 	switch (type) {

@@ -1,22 +1,19 @@
 import { ControlType } from "xtouch-control";
 import { config, controller, vm, vmEventEmitter } from "..";
 import { BaseLayer } from "../globals";
-import { selectBus, setBottomLabelLCDs, setFLeds } from "../helpers/voicemeeter/vmHelpers";
-import {
-	FADER_TYPES,
-	VoicemeeterChannelNames,
-} from "../helpers/voicemeeter/voicemeeterConstantsAndTypes";
+import { selectBus, setBottomLabelLCDs, setFLeds } from "../helpers/voicemeeter/helpers";
+import { FADER_TYPES, VoicemeeterChannelNames } from "../helpers/voicemeeter/constantsAndTypes";
 import dayjs from "dayjs";
-import { vuMeterStripsTask } from "../helpers/voicemeeter/vmVUMeters";
-import { resetFaderStates } from "../helpers/voicemeeter/vmFaderChecks";
+import { vuMeterStripsTask } from "../helpers/voicemeeter/vuMeters";
+import { resetFaderStates } from "../helpers/voicemeeter/faderChecks";
 import {
 	runConfiguredFaderChecks,
 	setFaderTypes,
 	setupVMFadeInputListener,
 	takeDownVMFadeInputListener,
-} from "../helpers/voicemeeter/vmFadeListener";
+} from "../helpers/voicemeeter/fadeListener";
 import { clearTopScreens } from "../helpers/xtctlHelper";
-import { muteChannelActionListener, setMuteButtonLeds } from "../helpers/voicemeeter/vmMute";
+import { muteChannelActionListener, setMuteButtonLeds } from "../helpers/voicemeeter/mute";
 
 let selectedBus = config.defaultBus;
 let hasBusSelected = false;

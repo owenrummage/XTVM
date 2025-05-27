@@ -1,7 +1,7 @@
 import { ControlType } from "xtouch-control";
 import { controller, vm } from "../..";
-import { getLeftFadersType } from "./vmFadeListener";
-import { FADER_TYPES } from "./voicemeeterConstantsAndTypes";
+import { getLeftFadersType } from "./fadeListener";
+import { FADER_TYPES } from "./constantsAndTypes";
 
 export function setFLeds(input?: ControlType) {
 	controller.right().setControlButton(`F1`, "OFF");

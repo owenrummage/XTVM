@@ -1,7 +1,7 @@
 import { controller, vm } from "../..";
-import { checkLeftFaders, checkMainFader } from "./vmFaderChecks";
-import { convertToDB } from "./vmHelpers";
-import { FADER_TYPES } from "./voicemeeterConstantsAndTypes";
+import { checkLeftFaders, checkMainFader } from "./faderChecks";
+import { convertToDB } from "./helpers";
+import { FADER_TYPES } from "./constantsAndTypes";
 
 /*
 This can be used to map fader inputs to voicemeeter strips/busses
