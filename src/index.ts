@@ -11,6 +11,9 @@ import { EventEmitter } from "stream";
 let controller: XTouchControl;
 let vm: Voicemeeter;
 
+export const config = {
+	vuType: 1,
+};
 
 let activeLayer: BaseLayer;
 

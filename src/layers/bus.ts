@@ -1,15 +1,337 @@
-import { controller, vm } from "..";
+import { ControlType } from "xtouch-control";
+import { controller, vm, vmEventEmitter } from "..";
 import { BaseLayer } from "../globals";
+import { convertFromDB, convertToDB, selectBus, setFLeds } from "../helpers/vmHelpers";
+import { VoicemeeterChannelNames } from "../helpers/voicemeeterConstantsAndTypes";
+import dayjs from "dayjs";
+import { vuMeterStripsTask } from "../helpers/vmVUMeters";
+
+let selectedBus = 0;
+let hasBusSelected = false;
+
+const stripFaderStates: Record<number, number> = {
+	1: 0,
+	2: 0,
+	3: 0,
+	4: 0,
+	5: 0,
+	6: 0,
+	7: 0,
+	8: 0,
+};
+// Check if the strip volumes have changed and set the fader if so
+function checkStripFaders() {
+	// TODO: Make a helper to check faders for busses and strips
+	for (let i = 0; i < 8; i++) {
+		const gain = Number(vm.parameters.Strip(i).Gain.get());
+		if (stripFaderStates[i + 1] !== gain) {
+			// Strip Changed
+			stripFaderStates[i + 1] = gain;
+			let newValue = convertFromDB(gain);
+
+			console.log(`Channel ${i + 1} Gain: ${newValue}`);
+			controller.channel(i + 1).setFader(newValue);
+		}
+	}
+
+	const busGain = Number(vm.parameters.Bus(selectedBus).Gain.get());
+	if (stripFaderStates[9] !== busGain) {
+		// Bus Changed
+		stripFaderStates[9] = busGain;
+		let newValue = convertFromDB(busGain);
+
+		console.log(`Bus ${selectedBus + 1} Gain: ${newValue}`);
+		controller.channel(9).setFader(newValue);
+	}
+}
+
+function refreshFromVM() {
+	// Set all of the sends by bus from voicemeeter
+	// TODO: Expand sends to helper
+	for (let i = 0; i < 8; i++) {
+		const vmBusName = VoicemeeterChannelNames[
+			selectedBus
+		] as keyof typeof VoicemeeterChannelNames;
+		const curState = Math.floor(vm.parameters.Strip(i)[vmBusName].get());
+		controller.channel(i + 1).setButton("SEL", curState === 1 ? "SOLID" : "OFF");
+	}
+
+	// Set all of the mutes by bus from voicemeeter
+	// TODO: Expand mutes to helper
+	for (let i = 0; i < 8; i++) {
+		const curState = Math.floor(vm.parameters.Strip(i).Mute.get());
+		// console.log("SBMSM", i, curState);
+		controller.channel(i + 1).setButton("MUTE", curState === 1 ? "SOLID" : "OFF");
+	}
+
+	// Set Bus Name LCDs
+	// TODO: Expand top LCDs to helper
+	const busLabel = vm.parameters.Bus(selectedBus).Label.get();
+	const words = busLabel.split(" ");
+	const busLabelWords: string[] = [];
+
+	for (const word of words) {
+		if (word.length <= 7) {
+			busLabelWords.push(word);
+		} else {
+			let start = 0;
+			while (start < word.length) {
+				busLabelWords.push(word.substring(start, start + 7));
+				start += 7;
+			}
+		}
+	}
+	controller.screens().setScreensArray(["", "", "", "", "", "", "", ""]);
+	controller.screens().setScreensArray(busLabelWords.slice(0, 8), 0);
+
+	// Get vm strip labels and set bottom lcd lines to them
+	// TODO: Expand bottom (strip) labels to helper
+	for (let i = 0; i < 8; i++) {
+		const label = vm.parameters.Strip(i).Label.get();
+		controller.channel(i + 1).setScreen("BOTTOM", label);
+	}
+
+	checkStripFaders();
+}
+
+// Listen for F keys for bus change
+function keyDownListener(key) {
+	if (key.action.startsWith("F")) {
+		const index = parseInt(key.action.substring(1)) - 1; // Extract index from F key
+		if (hasBusSelected && selectedBus === index) {
+			hasBusSelected = false;
+
+			vm.parameters.Bus(index).Sel.set(0);
+
+			const button = `F${index + 1}` as ControlType;
+
+			controller.right().setControlButton(button, "BLINK");
+
+			return;
+		}
+		if (index >= 0 && index < 8) {
+			selectBus(index);
+			setFLeds(key.action as ControlType);
+			selectedBus = index;
+			hasBusSelected = true;
+			refreshFromVM();
+		}
+	}
+}
+
+// Sets gain of strips 1-8 based on fade events
+let fadeTimeouts: Record<number, NodeJS.Timeout | null> = {};
+async function fadeListener(key) {
+	console.log(`Fade: ${key.channel} - ${key.value}`);
+	const dbValue = convertToDB(key.value);
+	console.log(dbValue);
+	if (key.channel === 9) {
+		// Use the 9th output fader for the selected bus
+		if (fadeTimeouts[key.channel]) {
+			clearTimeout(fadeTimeouts[key.channel]!);
+		}
+
+		fadeTimeouts[key.channel] = setTimeout(() => {
+			controller.channel(key.channel).setFader(key.value);
+			fadeTimeouts[key.channel] = null;
+		}, 300); // Adjust the delay as needed
+
+		// Set the bus gain
+		await vm.parameters.Bus(selectedBus).Gain.set(dbValue);
+		console.log(`Bus Gain: ${dbValue}`);
+	} else {
+		// Use 1-8 faders for strip
+		await vm.parameters.Strip(key.channel - 1).Gain.set(dbValue);
+
+		if (fadeTimeouts[key.channel]) {
+			clearTimeout(fadeTimeouts[key.channel]!);
+		}
+
+		fadeTimeouts[key.channel] = setTimeout(() => {
+			controller.channel(key.channel).setFader(key.value);
+			fadeTimeouts[key.channel] = null;
+		}, 300); // Adjust the delay as needed
+	}
+}
+
+const pttStates: Record<
+	number,
+	{
+		actionRunning: boolean;
+		state: boolean;
+		time: dayjs.Dayjs;
+	}
+> = {
+	0: {
+		actionRunning: false,
+		state: false,
+		time: dayjs(),
+	},
+	1: {
+		actionRunning: false,
+		state: false,
+		time: dayjs(),
+	},
+	2: {
+		actionRunning: false,
+		state: false,
+		time: dayjs(),
+	},
+	3: {
+		actionRunning: false,
+		state: false,
+		time: dayjs(),
+	},
+	4: {
+		actionRunning: false,
+		state: false,
+		time: dayjs(),
+	},
+	5: {
+		actionRunning: false,
+		state: false,
+		time: dayjs(),
+	},
+	6: {
+		actionRunning: false,
+		state: false,
+		time: dayjs(),
+	},
+	7: {
+		actionRunning: false,
+		state: false,
+		time: dayjs(),
+	},
+	8: {
+		actionRunning: false,
+		state: false,
+		time: dayjs(),
+	},
+};
+async function channelActionListener(e) {
+	console.log("Channel Action", e);
+	if (e.state === "keyDown") {
+		switch (e.action) {
+			case "select": {
+				// Handle sends from input strips to busses in both voicemeeter and the controller
+				const bus = selectedBus;
+				const vmInChannel = e.channel - 1;
+				const vmBusName = VoicemeeterChannelNames[
+					bus
+				] as keyof typeof VoicemeeterChannelNames;
+
+				const curState = Math.floor(
+					vm.parameters.Strip(vmInChannel)[vmBusName].get()
+				);
+
+				let newState = 0;
+				if (curState === 0) newState = 1; // If 0 then 1 and if 1 stay 0
+
+				vm.parameters.Strip(vmInChannel)[vmBusName].set(newState);
+				controller
+					.channel(e.channel)
+					.setButton("SEL", newState === 1 ? "SOLID" : "OFF");
+				break;
+			}
+			case "mute": {
+				// Handling muting/unmuting
+				const vmInChannel = e.channel - 1;
+				const isMutedNumber = Math.floor(
+					vm.parameters.Strip(vmInChannel).Mute.get()
+				);
+				const isMuted = isMutedNumber === 1 ? true : false;
+				console.log(e.channel, "Muted:", isMuted);
+				if (isMuted === false) {
+					// Was not muted, mute
+					pttStates[e.channel].actionRunning = true;
+					vm.parameters.Strip(vmInChannel).Mute.set(1);
+					controller.channel(e.channel).setButton("MUTE", "SOLID");
+				} else {
+					// Was muted, unmute and wait for keyUp (state = true and time set) to test for PTT
+					pttStates[e.channel].time = dayjs();
+					pttStates[e.channel].state = true;
+					vm.parameters.Strip(vmInChannel).Mute.set(0);
+					controller.channel(e.channel).setButton("MUTE", "BLINK");
+				}
+				break;
+			}
+		}
+	}
+
+	if (e.state === "keyUp") {
+		switch (e.action) {
+			case "mute": {
+				// Handling muting/unmuting
+				const vmInChannel = e.channel - 1;
+				const isMutedNumber = Math.floor(
+					vm.parameters.Strip(vmInChannel).Mute.get()
+				);
+				const isMuted = isMutedNumber === 1 ? true : false;
+				console.log(e.channel, "Muted:", isMuted);
+				if (pttStates[e.channel].actionRunning) {
+					pttStates[e.channel].actionRunning = false;
+					return;
+				}
+				if (isMuted === false && pttStates[e.channel].state === true) {
+					// Was muted on keyDown and now is unmuted, state is true so we should check for ptt
+					const newTime = dayjs();
+					const oldTime = pttStates[e.channel].time;
+					const diffTime = newTime.diff(oldTime, "millisecond");
+					if (diffTime > 750) {
+						// The button was held for more than 3/4th of a second
+						// PTT -> Remute
+						pttStates[e.channel].state = false;
+						vm.parameters.Strip(vmInChannel).Mute.set(1);
+						controller
+							.channel(e.channel)
+							.setButton("MUTE", "SOLID");
+					} else {
+						// No ptt, stay unmuted
+						controller
+							.channel(e.channel)
+							.setButton("MUTE", "OFF");
+					}
+				}
+				break;
+			}
+			case "pedal1": {
+				for (let channel = 0; channel < 8; channel++) {
+					vm.parameters.Bus(channel).Mute.set(1);
+				}
+				break;
+			}
+		}
+	}
+}
+
+function start() {
+	controller.right().setControlButton("Busses", "SOLID");
+
+	vuMeterStripsTask(true);
+	refreshFromVM();
+
+	controller.addListener("keyDown", keyDownListener);
+	controller.addListener("fade", fadeListener);
+	controller.addListener("channelAction", channelActionListener);
+	vmEventEmitter.addListener("change", refreshFromVM);
+}
+
+function stop() {
+	controller.right().setControlButton("Busses", "OFF");
+
+	vuMeterStripsTask(false);
+
+	controller.removeListener("keyDown", keyDownListener);
+	controller.removeListener("fade", fadeListener);
+	controller.removeListener("channelAction", channelActionListener);
+	vmEventEmitter.removeListener("change", refreshFromVM);
+}
 
 const layer: BaseLayer = {
 	name: "Busses",
 	activator: "button:Busses",
-	start: () => {
-		controller.right().setControlButton("Busses", "BLINK");
-	},
-	stop: () => {
-		controller.right().setControlButton("Busses", "OFF");
-	},
+	start,
+	stop,
 };
 
 export default layer;
