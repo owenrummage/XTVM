@@ -1,6 +1,6 @@
-export interface baseLayer {
-    name: string;
-    activator: string;
-    start: () => void;
-    stop: () => void;
+export interface BaseLayer {
+	name: string;
+	activator: string;
+	start: () => void;
+	stop: () => void;
 }
