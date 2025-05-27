@@ -12,24 +12,23 @@ export enum FADER_TYPES {
 	STRIP,
 }
 
+// Configured fader types and main fader channel variables
 let leftFadersType: FADER_TYPES;
 let mainFaderType: FADER_TYPES;
 let mainFaderChannel: number;
-let configuredChecks: boolean = false;
 
+// Set configured variables
 export function setFaderTypes(
 	leftFadersTypeIn: FADER_TYPES,
 	mainFadertypeIn: FADER_TYPES,
-	mainFaderChannelIn: number,
-	configuredChecksIn = false
+	mainFaderChannelIn: number
 ) {
 	leftFadersType = leftFadersTypeIn;
 	mainFaderType = mainFadertypeIn;
 	mainFaderChannel = mainFaderChannelIn;
-
-	configuredChecks = configuredChecksIn;
 }
 
+// Internal setVMFaderByType
 async function setVMFaderByType(type: FADER_TYPES, channel: number, value: number) {
 	switch (type) {
 		case FADER_TYPES.BUS:
@@ -40,6 +39,7 @@ async function setVMFaderByType(type: FADER_TYPES, channel: number, value: numbe
 }
 
 let fadeTimeouts: Record<number, NodeJS.Timeout | null> = {};
+// Internal Fade Listener
 async function fadeListener(key) {
 	console.log(`Fade: ${key.channel} - ${key.value}`);
 	const dbValue = convertToDB(key.value);
@@ -73,21 +73,23 @@ async function fadeListener(key) {
 	}
 }
 
+// Run fader checks based on configured values
 export function runConfiguredFaderChecks() {
 	checkLeftFaders(leftFadersType);
 	checkMainFader(mainFaderType, mainFaderChannel);
 }
 
+// Setup fader mappings for both listener and checks
 export function setupVMFadeInputListener(
 	leftFadersTypeIn: FADER_TYPES,
 	mainFadertypeIn: FADER_TYPES,
-	mainFaderChannelIn: number,
-	configuredChecksIn = false
+	mainFaderChannelIn: number
 ) {
-	setFaderTypes(leftFadersTypeIn, mainFadertypeIn, mainFaderChannelIn, configuredChecksIn);
+	setFaderTypes(leftFadersTypeIn, mainFadertypeIn, mainFaderChannelIn);
 	controller.addListener("fade", fadeListener);
 }
 
+// Remove fader listener
 export function takeDownVMFadeInputListener() {
 	controller.removeListener("fade", fadeListener);
 }

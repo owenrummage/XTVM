@@ -28,7 +28,7 @@ function getVMFaderByType(type: FADER_TYPES, channel: number) {
 	}
 }
 
-// Check if the strip volumes have changed and set the fader if so
+// Check if the left fader set volumes have changed and set the fader if so
 export function checkLeftFaders(type = FADER_TYPES.STRIP) {
 	for (let i = 0; i < 8; i++) {
 		const gain = getVMFaderByType(type, i);
@@ -43,6 +43,7 @@ export function checkLeftFaders(type = FADER_TYPES.STRIP) {
 	}
 }
 
+// Check if the main fader volume has changed and set the fader if so
 export function checkMainFader(type = FADER_TYPES.BUS, channel: number) {
 	const gain = getVMFaderByType(type, channel);
 	if (faderStates[9] !== gain) {
