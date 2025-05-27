@@ -7,6 +7,7 @@ import { Voicemeeter } from "voicemeeter-connector";
 import XTouchControl from "xtouch-control";
 import { BaseLayer } from "./globals";
 import { EventEmitter } from "stream";
+import { reset } from "./helpers/xtReset";
 
 export { config } from "./config";
 
@@ -76,10 +77,16 @@ async function run() {
 						const button = newLayer.activator.split(":")[1];
 						controller.on("keyDown", (key) => {
 							if (key.action == button) {
+								if (
+									newLayer.name ===
+									activeLayer?.name
+								)
+									return;
 								activeLayer?.stop();
 								console.log(
 									`Button ${button} pressed, activating layer ${newLayer.name}`
 								);
+								reset();
 								activeLayer = newLayer;
 								newLayer.start();
 							}
