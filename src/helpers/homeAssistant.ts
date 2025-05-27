@@ -1,4 +1,5 @@
 import { config } from "..";
+import mqtt from "mqtt";
 
 export async function postRequest(url: string, data: object) {
 	console.log(
@@ -23,4 +24,13 @@ export async function getState(entity_id: string) {
 			"Content-Type": "application/json",
 		},
 	}).then((res) => res.json());
+}
+
+export const mqttClient = mqtt.connect(config.hass.mqtt.broker, config.hass.mqtt.options);
+mqttClient.subscribe(config.hass.light1.stateTopic);
+export async function goveeMqtt(commandTopic: string, data: any) {
+	if (!data.state) {
+		data.state = "ON";
+	}
+	mqttClient.publish(commandTopic, JSON.stringify(data));
 }

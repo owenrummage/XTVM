@@ -11,6 +11,7 @@
   "description": "",
   "dependencies": {
     "dayjs": "^1.11.13",
+    "mqtt": "^5.13.0",
     "nodemon": "^3.1.10",
     "test": "file:",
     "ts-node": "^10.9.2",

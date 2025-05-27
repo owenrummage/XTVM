@@ -1,8 +1,9 @@
 import { config, controller, vm } from "..";
 import { BaseLayer } from "../globals";
-import { getState, postRequest } from "../helpers/homeAssistant";
+import { getState, goveeMqtt, postRequest } from "../helpers/homeAssistant";
+import { convertToPercent } from "../helpers/vmHelpers";
 
-const sfl = false; // Sets standard where every input is a http call or keyed where every fader release is a http call
+const sfl = true; // Sets standard where every input is a http call or keyed where every fader release is a http call
 
 let updateInterval: NodeJS.Timeout;
 let curState = false;
@@ -73,8 +74,12 @@ async function channelActionListener(e) {
 				if (!sfl) {
 					brightness = midiToBrightness(kflState);
 
-					await postRequest("services/light/turn_on", {
-						entity_id: config.hass.light1.entity_id,
+					// await postRequest("services/light/turn_on", {
+					// 	entity_id: config.hass.light1.entity_id,
+					// 	brightness,
+					// });
+
+					goveeMqtt(config.hass.light1.commandTopic, {
 						brightness,
 					});
 
@@ -88,9 +93,17 @@ async function channelActionListener(e) {
 				// RGB Change
 				console.log("Sending RGB Change:", rgb);
 
-				await postRequest("services/light/turn_on", {
-					entity_id: config.hass.light1.entity_id,
-					rgb_color: rgb,
+				// await postRequest("services/light/turn_on", {
+				// 	entity_id: config.hass.light1.entity_id,
+				// 	rgb_color: rgb,
+				// });
+
+				goveeMqtt(config.hass.light1.commandTopic, {
+					color: {
+						r: rgb[0],
+						g: rgb[1],
+						b: rgb[2],
+					},
 				});
 
 				clearTimeout(activeChangeTimeout);
@@ -132,14 +145,22 @@ async function standardFadeListener(key) {
 		controller.channel(1).setFader(key.value);
 
 		brightness = midiToBrightness(key.value);
-		lastBrightness = brightness;
 
 		activeChange = true;
 
-		await postRequest("services/light/turn_on", {
-			entity_id: config.hass.light1.entity_id,
-			brightness,
-		});
+		// await postRequest("services/light/turn_on", {
+		// 	entity_id: config.hass.light1.entity_id,
+		// 	brightness,
+		// });
+
+		if (brightness !== lastBrightness)
+			goveeMqtt(config.hass.light1.commandTopic, {
+				brightness: Math.round(
+					convertToPercent(brightnessToMidi(brightness))
+				),
+			});
+
+		lastBrightness = brightness;
 
 		clearTimeout(activeChangeTimeout);
 		activeChangeTimeout = setTimeout(() => {
@@ -189,7 +210,7 @@ function stop() {
 
 const layer: BaseLayer = {
 	name: "User",
-	activator: "button:User",
+	activator: "button:NoneUser",
 	start,
 	stop,
 };
