@@ -58,6 +58,7 @@ async function run() {
 		vmEventEmitter.emit("change");
 	});
 
+	// Standard layers
 	const layersDir = path.resolve(__dirname, "./layers");
 	const layerFiles = fs.readdirSync(layersDir).filter((file) => file.endsWith(".ts"));
 
@@ -91,6 +92,8 @@ async function run() {
 								newLayer.start();
 							}
 						});
+					} else if (newLayer.activator === "launch") {
+						newLayer.start();
 					}
 				} else {
 					console.log(`Layer: ${file} not loaded`);
