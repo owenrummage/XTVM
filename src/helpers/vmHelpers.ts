@@ -1,5 +1,7 @@
 import { ControlType } from "xtouch-control";
 import { controller, vm } from "..";
+import { getLeftFadersType } from "./vmFadeListener";
+import { FADER_TYPES } from "./voicemeeterConstantsAndTypes";
 
 export function setFLeds(input?: ControlType) {
 	controller.right().setControlButton(`F1`, "OFF");
@@ -35,4 +37,21 @@ export function selectBus(index: number) {
 		vm.parameters.Bus(i).Sel.set(0);
 	}
 	vm.parameters.Bus(index).Sel.set(1);
+}
+
+function getLabelByFaderType(type: FADER_TYPES, channel: number) {
+	switch (type) {
+		case FADER_TYPES.BUS:
+			return vm.parameters.Bus(channel).Label.get();
+		case FADER_TYPES.STRIP:
+			return vm.parameters.Strip(channel).Label.get();
+	}
+}
+
+// Get vm labels and set bottom lcd lines to them
+export function setBottomLabelLCDs() {
+	for (let i = 0; i < 8; i++) {
+		const label = getLabelByFaderType(getLeftFadersType(), i);
+		controller.channel(i + 1).setScreen("BOTTOM", label);
+	}
 }

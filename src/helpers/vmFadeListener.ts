@@ -24,6 +24,11 @@ export function setFaderTypes(
 	mainFaderChannel = mainFaderChannelIn;
 }
 
+// Small function to expose the configured fader type
+export function getLeftFadersType() {
+	return leftFadersType;
+}
+
 // Internal setVMFaderByType
 async function setVMFaderByType(type: FADER_TYPES, channel: number, value: number) {
 	switch (type) {

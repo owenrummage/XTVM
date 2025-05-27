@@ -1,7 +1,7 @@
 import { ControlType } from "xtouch-control";
 import { config, controller, vm, vmEventEmitter } from "..";
 import { BaseLayer } from "../globals";
-import { selectBus, setFLeds } from "../helpers/vmHelpers";
+import { selectBus, setBottomLabelLCDs, setFLeds } from "../helpers/vmHelpers";
 import { FADER_TYPES, VoicemeeterChannelNames } from "../helpers/voicemeeterConstantsAndTypes";
 import dayjs from "dayjs";
 import { vuMeterStripsTask } from "../helpers/vmVUMeters";
@@ -55,12 +55,7 @@ function refreshFromVM() {
 	controller.screens().setScreensArray(["", "", "", "", "", "", "", ""]);
 	controller.screens().setScreensArray(busLabelWords.slice(0, 8), 0);
 
-	// Get vm strip labels and set bottom lcd lines to them
-	// TODO: Expand bottom (strip) labels to helper
-	for (let i = 0; i < 8; i++) {
-		const label = vm.parameters.Strip(i).Label.get();
-		controller.channel(i + 1).setScreen("BOTTOM", label);
-	}
+	setBottomLabelLCDs();
 
 	// Get selected bus
 	setFLeds();
