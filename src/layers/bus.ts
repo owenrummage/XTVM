@@ -16,6 +16,7 @@ import {
 	takeDownVMFadeInputListener,
 } from "../helpers/voicemeeter/vmFadeListener";
 import { clearTopScreens } from "../helpers/xtctlHelper";
+import { muteChannelActionListener, setMuteButtonLeds } from "../helpers/voicemeeter/vmMute";
 
 let selectedBus = config.defaultBus;
 let hasBusSelected = false;
@@ -31,13 +32,7 @@ function refreshFromVM() {
 		controller.channel(i + 1).setButton("SEL", curState === 1 ? "SOLID" : "OFF");
 	}
 
-	// Set all of the mutes by bus from voicemeeter
-	// TODO: Expand mutes to helper
-	for (let i = 0; i < 8; i++) {
-		const curState = Math.floor(vm.parameters.Strip(i).Mute.get());
-		// console.log("SBMSM", i, curState);
-		controller.channel(i + 1).setButton("MUTE", curState === 1 ? "SOLID" : "OFF");
-	}
+	setMuteButtonLeds();
 
 	// Set Bus Name LCDs
 	// TODO: Expand top LCDs to helper
@@ -65,7 +60,6 @@ function refreshFromVM() {
 	setFLeds();
 	for (let i = 0; i < 8; i++) {
 		const isSelected = vm.parameters.Bus(i).Sel.get() === 1;
-		console.log(i, isSelected, "SB");
 		if (isSelected) {
 			setFLeds(("F" + (i + 1)) as ControlType);
 		}
@@ -106,60 +100,6 @@ function keyDownListener(key) {
 	}
 }
 
-const pttStates: Record<
-	number,
-	{
-		actionRunning: boolean;
-		state: boolean;
-		time: dayjs.Dayjs;
-	}
-> = {
-	0: {
-		actionRunning: false,
-		state: false,
-		time: dayjs(),
-	},
-	1: {
-		actionRunning: false,
-		state: false,
-		time: dayjs(),
-	},
-	2: {
-		actionRunning: false,
-		state: false,
-		time: dayjs(),
-	},
-	3: {
-		actionRunning: false,
-		state: false,
-		time: dayjs(),
-	},
-	4: {
-		actionRunning: false,
-		state: false,
-		time: dayjs(),
-	},
-	5: {
-		actionRunning: false,
-		state: false,
-		time: dayjs(),
-	},
-	6: {
-		actionRunning: false,
-		state: false,
-		time: dayjs(),
-	},
-	7: {
-		actionRunning: false,
-		state: false,
-		time: dayjs(),
-	},
-	8: {
-		actionRunning: false,
-		state: false,
-		time: dayjs(),
-	},
-};
 async function channelActionListener(e) {
 	console.log("Channel Action", e);
 	if (e.state === "keyDown") {
@@ -185,73 +125,6 @@ async function channelActionListener(e) {
 					.setButton("SEL", newState === 1 ? "SOLID" : "OFF");
 				break;
 			}
-			case "mute": {
-				// Handling muting/unmuting
-				const vmInChannel = e.channel - 1;
-				const isMutedNumber = Math.floor(
-					vm.parameters.Strip(vmInChannel).Mute.get()
-				);
-				const isMuted = isMutedNumber === 1 ? true : false;
-				console.log(e.channel, "Muted:", isMuted);
-				if (isMuted === false) {
-					// Was not muted, mute
-					pttStates[e.channel].actionRunning = true;
-					vm.parameters.Strip(vmInChannel).Mute.set(1);
-					controller.channel(e.channel).setButton("MUTE", "SOLID");
-				} else {
-					// Was muted, unmute and wait for keyUp (state = true and time set) to test for PTT
-					pttStates[e.channel].time = dayjs();
-					pttStates[e.channel].state = true;
-					vm.parameters.Strip(vmInChannel).Mute.set(0);
-					controller.channel(e.channel).setButton("MUTE", "BLINK");
-				}
-				break;
-			}
-		}
-	}
-
-	if (e.state === "keyUp") {
-		switch (e.action) {
-			case "mute": {
-				// Handling muting/unmuting
-				const vmInChannel = e.channel - 1;
-				const isMutedNumber = Math.floor(
-					vm.parameters.Strip(vmInChannel).Mute.get()
-				);
-				const isMuted = isMutedNumber === 1 ? true : false;
-				console.log(e.channel, "Muted:", isMuted);
-				if (pttStates[e.channel].actionRunning) {
-					pttStates[e.channel].actionRunning = false;
-					return;
-				}
-				if (isMuted === false && pttStates[e.channel].state === true) {
-					// Was muted on keyDown and now is unmuted, state is true so we should check for ptt
-					const newTime = dayjs();
-					const oldTime = pttStates[e.channel].time;
-					const diffTime = newTime.diff(oldTime, "millisecond");
-					if (diffTime > 750) {
-						// The button was held for more than 3/4th of a second
-						// PTT -> Remute
-						pttStates[e.channel].state = false;
-						vm.parameters.Strip(vmInChannel).Mute.set(1);
-						controller
-							.channel(e.channel)
-							.setButton("MUTE", "SOLID");
-					} else {
-						// No ptt, stay unmuted
-						controller
-							.channel(e.channel)
-							.setButton("MUTE", "OFF");
-					}
-				}
-				break;
-			}
-			case "pedal1": {
-				for (let channel = 0; channel < 8; channel++) {
-					vm.parameters.Bus(channel).Mute.set(1);
-				}
-				break;
-			}
 		}
 	}
 }
@@ -261,11 +134,14 @@ function start() {
 
 	setFLeds(("F" + (selectedBus + 1)) as ControlType);
 	vuMeterStripsTask(true);
+
+	setupVMFadeInputListener(FADER_TYPES.STRIP, FADER_TYPES.BUS, selectedBus);
+
 	refreshFromVM();
 
 	controller.addListener("keyDown", keyDownListener);
-	setupVMFadeInputListener(FADER_TYPES.STRIP, FADER_TYPES.BUS, selectedBus);
 	controller.addListener("channelAction", channelActionListener);
+	controller.addListener("channelAction", muteChannelActionListener);
 	vmEventEmitter.addListener("change", refreshFromVM);
 }
 
@@ -277,6 +153,7 @@ function stop() {
 	controller.removeListener("keyDown", keyDownListener);
 	takeDownVMFadeInputListener();
 	controller.removeListener("channelAction", channelActionListener);
+	controller.removeListener("channelAction", muteChannelActionListener);
 	vmEventEmitter.removeListener("change", refreshFromVM);
 
 	setFLeds();

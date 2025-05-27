@@ -52,6 +52,6 @@ function getLabelByFaderType(type: FADER_TYPES, channel: number) {
 export function setBottomLabelLCDs() {
 	for (let i = 0; i < 8; i++) {
 		const label = getLabelByFaderType(getLeftFadersType(), i);
-		controller.channel(i + 1).setScreen("BOTTOM", label);
+		if (label) controller.channel(i + 1).setScreen("BOTTOM", label);
 	}
 }
