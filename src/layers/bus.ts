@@ -70,7 +70,6 @@ function refreshFromVM() {
 		}
 	}
 
-	console.log("Setting faders");
 	runConfiguredFaderChecks();
 }
 
