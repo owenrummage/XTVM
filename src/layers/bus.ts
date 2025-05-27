@@ -1,49 +1,21 @@
 import { ControlType } from "xtouch-control";
-import { controller, vm, vmEventEmitter } from "..";
+import { config, controller, vm, vmEventEmitter } from "..";
 import { BaseLayer } from "../globals";
-import { convertFromDB, convertToDB, selectBus, setFLeds } from "../helpers/vmHelpers";
+import { selectBus, setFLeds } from "../helpers/vmHelpers";
 import { VoicemeeterChannelNames } from "../helpers/voicemeeterConstantsAndTypes";
 import dayjs from "dayjs";
 import { vuMeterStripsTask } from "../helpers/vmVUMeters";
+import { resetFaderStates } from "../helpers/vmFaderChecks";
+import {
+	FADER_TYPES,
+	runConfiguredFaderChecks,
+	setFaderTypes,
+	setupVMFadeInputListener,
+	takeDownVMFadeInputListener,
+} from "../helpers/vmFadeListener";
 
-let selectedBus = 0;
+let selectedBus = config.defaultBus;
 let hasBusSelected = false;
-
-let stripFaderStates: Record<number, number> = {
-	1: 0,
-	2: 0,
-	3: 0,
-	4: 0,
-	5: 0,
-	6: 0,
-	7: 0,
-	8: 0,
-};
-// Check if the strip volumes have changed and set the fader if so
-function checkStripFaders() {
-	// TODO: Make a helper to check faders for busses and strips
-	for (let i = 0; i < 8; i++) {
-		const gain = Number(vm.parameters.Strip(i).Gain.get());
-		if (stripFaderStates[i + 1] !== gain) {
-			// Strip Changed
-			stripFaderStates[i + 1] = gain;
-			let newValue = convertFromDB(gain);
-
-			console.log(`Channel ${i + 1} Gain: ${newValue}`);
-			controller.channel(i + 1).setFader(newValue);
-		}
-	}
-
-	const busGain = Number(vm.parameters.Bus(selectedBus).Gain.get());
-	if (stripFaderStates[9] !== busGain) {
-		// Bus Changed
-		stripFaderStates[9] = busGain;
-		let newValue = convertFromDB(busGain);
-
-		console.log(`Bus ${selectedBus + 1} Gain: ${newValue}`);
-		controller.channel(9).setFader(newValue);
-	}
-}
 
 function refreshFromVM() {
 	// Set all of the sends by bus from voicemeeter
@@ -107,7 +79,7 @@ function refreshFromVM() {
 	}
 
 	console.log("Setting faders");
-	checkStripFaders();
+	runConfiguredFaderChecks();
 }
 
 // Listen for F keys for bus change
@@ -129,44 +101,10 @@ function keyDownListener(key) {
 			selectBus(index);
 			setFLeds(key.action as ControlType);
 			selectedBus = index;
+			setFaderTypes(FADER_TYPES.STRIP, FADER_TYPES.BUS, selectedBus);
 			hasBusSelected = true;
 			refreshFromVM();
 		}
-	}
-}
-
-// Sets gain of strips 1-8 based on fade events
-let fadeTimeouts: Record<number, NodeJS.Timeout | null> = {};
-async function fadeListener(key) {
-	console.log(`Fade: ${key.channel} - ${key.value}`);
-	const dbValue = convertToDB(key.value);
-	console.log(dbValue);
-	if (key.channel === 9) {
-		// Use the 9th output fader for the selected bus
-		if (fadeTimeouts[key.channel]) {
-			clearTimeout(fadeTimeouts[key.channel]!);
-		}
-
-		fadeTimeouts[key.channel] = setTimeout(() => {
-			controller.channel(key.channel).setFader(key.value);
-			fadeTimeouts[key.channel] = null;
-		}, 300); // Adjust the delay as needed
-
-		// Set the bus gain
-		await vm.parameters.Bus(selectedBus).Gain.set(dbValue);
-		console.log(`Bus Gain: ${dbValue}`);
-	} else {
-		// Use 1-8 faders for strip
-		await vm.parameters.Strip(key.channel - 1).Gain.set(dbValue);
-
-		if (fadeTimeouts[key.channel]) {
-			clearTimeout(fadeTimeouts[key.channel]!);
-		}
-
-		fadeTimeouts[key.channel] = setTimeout(() => {
-			controller.channel(key.channel).setFader(key.value);
-			fadeTimeouts[key.channel] = null;
-		}, 300); // Adjust the delay as needed
 	}
 }
 
@@ -328,7 +266,7 @@ function start() {
 	refreshFromVM();
 
 	controller.addListener("keyDown", keyDownListener);
-	controller.addListener("fade", fadeListener);
+	setupVMFadeInputListener(FADER_TYPES.STRIP, FADER_TYPES.BUS, selectedBus);
 	controller.addListener("channelAction", channelActionListener);
 	vmEventEmitter.addListener("change", refreshFromVM);
 }
@@ -339,22 +277,13 @@ function stop() {
 	vuMeterStripsTask(false);
 
 	controller.removeListener("keyDown", keyDownListener);
-	controller.removeListener("fade", fadeListener);
+	takeDownVMFadeInputListener();
 	controller.removeListener("channelAction", channelActionListener);
 	vmEventEmitter.removeListener("change", refreshFromVM);
 
 	setFLeds();
 
-	stripFaderStates = {
-		1: 0,
-		2: 0,
-		3: 0,
-		4: 0,
-		5: 0,
-		6: 0,
-		7: 0,
-		8: 0,
-	};
+	resetFaderStates();
 }
 
 const layer: BaseLayer = {
