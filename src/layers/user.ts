@@ -1,7 +1,7 @@
 import { config, controller, vm } from "..";
 import { BaseLayer } from "../globals";
 import { getState, goveeMqtt, postRequest } from "../helpers/homeAssistant";
-import { convertToPercent } from "../helpers/vmHelpers";
+import { convertToPercent } from "../helpers/voicemeeter/vmHelpers";
 
 const sfl = true; // Sets standard where every input is a http call or keyed where every fader release is a http call
 

@@ -1,4 +1,4 @@
-import { controller, vm } from "..";
+import { controller, vm } from "../..";
 import { checkLeftFaders, checkMainFader } from "./vmFaderChecks";
 import { convertToDB } from "./vmHelpers";
 import { FADER_TYPES } from "./voicemeeterConstantsAndTypes";

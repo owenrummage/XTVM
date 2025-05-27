@@ -1,17 +1,21 @@
 import { ControlType } from "xtouch-control";
 import { config, controller, vm, vmEventEmitter } from "..";
 import { BaseLayer } from "../globals";
-import { selectBus, setBottomLabelLCDs, setFLeds } from "../helpers/vmHelpers";
-import { FADER_TYPES, VoicemeeterChannelNames } from "../helpers/voicemeeterConstantsAndTypes";
+import { selectBus, setBottomLabelLCDs, setFLeds } from "../helpers/voicemeeter/vmHelpers";
+import {
+	FADER_TYPES,
+	VoicemeeterChannelNames,
+} from "../helpers/voicemeeter/voicemeeterConstantsAndTypes";
 import dayjs from "dayjs";
-import { vuMeterStripsTask } from "../helpers/vmVUMeters";
-import { resetFaderStates } from "../helpers/vmFaderChecks";
+import { vuMeterStripsTask } from "../helpers/voicemeeter/vmVUMeters";
+import { resetFaderStates } from "../helpers/voicemeeter/vmFaderChecks";
 import {
 	runConfiguredFaderChecks,
 	setFaderTypes,
 	setupVMFadeInputListener,
 	takeDownVMFadeInputListener,
-} from "../helpers/vmFadeListener";
+} from "../helpers/voicemeeter/vmFadeListener";
+import { clearTopScreens } from "../helpers/xtctlHelper";
 
 let selectedBus = config.defaultBus;
 let hasBusSelected = false;
@@ -52,9 +56,9 @@ function refreshFromVM() {
 			}
 		}
 	}
-	controller.screens().setScreensArray(["", "", "", "", "", "", "", ""]);
-	controller.screens().setScreensArray(busLabelWords.slice(0, 8), 0);
 
+	clearTopScreens();
+	controller.screens().setScreensArray(busLabelWords.slice(0, 8), 0);
 	setBottomLabelLCDs();
 
 	// Get selected bus

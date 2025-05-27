@@ -1,5 +1,5 @@
 import { ControlType } from "xtouch-control";
-import { controller, vm } from "..";
+import { controller, vm } from "../..";
 import { getLeftFadersType } from "./vmFadeListener";
 import { FADER_TYPES } from "./voicemeeterConstantsAndTypes";
 

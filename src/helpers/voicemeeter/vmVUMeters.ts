@@ -1,4 +1,4 @@
-import { config, controller, vm } from "..";
+import { config, controller, vm } from "../..";
 
 let vuMeterTaskInterval: NodeJS.Timeout;
 
