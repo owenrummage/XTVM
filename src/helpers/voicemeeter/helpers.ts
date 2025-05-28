@@ -32,11 +32,12 @@ export function convertFromDB(value: number): number {
 }
 
 // Turn off selection on vm bus and turn on selection for input
-export function selectBus(index: number) {
+export function selectBus(index?: number) {
 	for (let i = 0; i < 8; i++) {
 		vm.parameters.Bus(i).Sel.set(0);
 	}
-	vm.parameters.Bus(index).Sel.set(1);
+
+	if (index) vm.parameters.Bus(index).Sel.set(1);
 }
 
 function getLabelByFaderType(type: FADER_TYPES, channel: number) {
