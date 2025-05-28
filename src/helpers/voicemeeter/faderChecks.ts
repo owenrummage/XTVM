@@ -6,15 +6,15 @@ let faderStates: Record<number, number>;
 
 export function resetFaderStates() {
 	faderStates = {
-		1: 0,
-		2: 0,
-		3: 0,
-		4: 0,
-		5: 0,
-		6: 0,
-		7: 0,
-		8: 0,
-		9: 0,
+		1: -100,
+		2: -100,
+		3: -100,
+		4: -100,
+		5: -100,
+		6: -100,
+		7: -100,
+		8: -100,
+		9: -100,
 	};
 }
 resetFaderStates();

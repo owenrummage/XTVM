@@ -1,5 +1,5 @@
 import { controller, vm } from "../..";
-import { checkLeftFaders, checkMainFader } from "./faderChecks";
+import { checkLeftFaders, checkMainFader, resetFaderStates } from "./faderChecks";
 import { convertToDB } from "./helpers";
 import { FADER_TYPES } from "./constantsAndTypes";
 
@@ -22,6 +22,8 @@ export function setFaderTypes(
 	leftFadersType = leftFadersTypeIn;
 	mainFaderType = mainFadertypeIn;
 	mainFaderChannel = mainFaderChannelIn;
+
+	resetFaderStates();
 }
 
 // Small function to expose the configured fader type
