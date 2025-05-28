@@ -23,7 +23,8 @@ async function setMuteByType(type: FADER_TYPES, channel: number, value: number) 
 
 export function setMuteButtonLeds() {
 	for (let i = 0; i < 8; i++) {
-		if (pttStates[i].state === true) return;
+		if (pttStates[i + 1].state === true) return;
+
 		const curState = Math.floor(getMuteByType(getLeftFadersType(), i));
 		controller.channel(i + 1).setButton("MUTE", curState === 1 ? "SOLID" : "OFF");
 	}
