@@ -125,8 +125,15 @@ async function channelActionListener(e) {
 	}
 }
 
+let lastBusVMSelected = false;
+
 function start() {
 	controller.right().setControlButton("Busses", "SOLID");
+
+	if (lastBusVMSelected) {
+		vm.parameters.Bus(selectedBus).Sel.set(1);
+		lastBusVMSelected = false;
+	}
 
 	setFLeds(("F" + (selectedBus + 1)) as ControlType);
 	vuMeterStripsTask(true);
@@ -143,6 +150,9 @@ function start() {
 
 function stop() {
 	controller.right().setControlButton("Busses", "OFF");
+
+	const isBusVMSelected = vm.parameters.Bus(selectedBus).Sel.get() === 1;
+	if (isBusVMSelected) lastBusVMSelected = true;
 
 	vuMeterStripsTask(false);
 
