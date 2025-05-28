@@ -50,3 +50,39 @@ export function vuMeterStripsTask(active: boolean) {
 		clearInterval(vuMeterTaskInterval);
 	}
 }
+
+export function vuMeterBusesTask(active: boolean) {
+	if (active) {
+		// Start task
+		vuMeterTaskInterval = setInterval(() => {
+			for (let channel = 0; channel < 8; channel++) {
+				let meterState = 0;
+
+				// Use 8 levels and take the highest
+				const vChannel = channel * 8;
+				let maxLevel = 0;
+				for (let i = 0; i < 8; i++) {
+					const level = vm.getLevel(3, vChannel + i);
+					if (level > maxLevel) maxLevel = level;
+				}
+				meterState = maxLevel;
+
+				const mappedValue = Math.round(
+					Math.max(0, Math.min(8, Math.pow(meterState, 0.5) * 8))
+				);
+
+				controller.channel(channel + 1).setMeter(mappedValue);
+				// console.log(
+				// 	`Setting BUS c${
+				// 		channel + 1
+				// 	} to ${mappedValue} with vC${vChannel}-vC${
+				// 		vChannel + 7
+				// 	} as ${meterState}`
+				// );
+			}
+		}, 10);
+	} else if (vuMeterTaskInterval) {
+		// Stop task
+		clearInterval(vuMeterTaskInterval);
+	}
+}
