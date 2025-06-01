@@ -14,8 +14,14 @@ export function vuMeterStripsTask(active: boolean) {
 				if (channel < 5) {
 					// Channels 0-4: use stereo L/R
 					const vChannel = channel * 2;
-					vuMeterL = vm.getLevel(config.vuType, vChannel);
-					vuMeterR = vm.getLevel(config.vuType, vChannel + 1);
+					vuMeterL = vm.getLevel(
+						config.vuType as 0 | 1 | 2 | 3,
+						vChannel
+					);
+					vuMeterR = vm.getLevel(
+						config.vuType as 0 | 1 | 2 | 3,
+						vChannel + 1
+					);
 					meterState = Math.max(vuMeterL, vuMeterR);
 				} else {
 					// Channels 5-7: use 8 levels and take the highest
@@ -23,7 +29,7 @@ export function vuMeterStripsTask(active: boolean) {
 					let maxLevel = 0;
 					for (let i = 0; i < 8; i++) {
 						const level = vm.getLevel(
-							config.vuType,
+							config.vuType as 0 | 1 | 2 | 3,
 							vChannel + i
 						);
 						if (level > maxLevel) maxLevel = level;
