@@ -14,7 +14,25 @@ export { config } from "./config";
 let controller: XTouchControl;
 let vm: Voicemeeter;
 
-let activeLayer: BaseLayer;
+let activeLayer: number;
+export let activeLayers: BaseLayer[] = [];
+
+export function startLayer(layer: BaseLayer) {
+	activeLayers.push(layer);
+	layer.start();
+	return activeLayers.indexOf(layer);
+}
+
+export function stopLayer(layer: BaseLayer) {
+	const index = activeLayers.indexOf(layer);
+	if (index > -1) activeLayers.splice(index, 1);
+
+	layer.stop();
+}
+
+export function getActiveLayers() {
+	return activeLayers;
+}
 
 // Attach exit handler to close the voicemeeter Dll/API
 function attachExitHandler(vm: Voicemeeter) {
@@ -47,17 +65,7 @@ function attachExitHandler(vm: Voicemeeter) {
 
 export const vmEventEmitter = new EventEmitter();
 
-async function run() {
-	controller = new XTouchControl();
-	vm = await Voicemeeter.init();
-
-	vm.connect();
-	attachExitHandler(vm);
-
-	vm.attachChangeEvent(() => {
-		vmEventEmitter.emit("change");
-	});
-
+export async function loadLayers() {
 	// Standard layers
 	const layersDir = path.resolve(__dirname, "./layers");
 	const layerFiles = fs.readdirSync(layersDir).filter((file) => file.endsWith(".ts"));
@@ -80,20 +88,33 @@ async function run() {
 							if (key.action == button) {
 								if (
 									newLayer.name ===
-									activeLayer?.name
+									activeLayers[activeLayer]
+										?.name
 								)
 									return;
-								activeLayer?.stop();
+
+								if (
+									activeLayer &&
+									activeLayers[activeLayer]
+								) {
+									stopLayer(
+										activeLayers[
+											activeLayer
+										]
+									);
+								}
+
 								console.log(
 									`Button ${button} pressed, activating layer ${newLayer.name}`
 								);
+
 								reset();
-								activeLayer = newLayer;
-								newLayer.start();
+
+								activeLayer = startLayer(newLayer);
 							}
 						});
 					} else if (newLayer.activator === "launch") {
-						newLayer.start();
+						startLayer(newLayer);
 					}
 				} else {
 					console.log(`Layer: ${file} not loaded`);
@@ -103,6 +124,20 @@ async function run() {
 				console.error(`Failed to load layer: ${file}`, err);
 			});
 	}
+}
+
+async function run() {
+	controller = new XTouchControl();
+	vm = await Voicemeeter.init();
+
+	vm.connect();
+	attachExitHandler(vm);
+
+	vm.attachChangeEvent(() => {
+		vmEventEmitter.emit("change");
+	});
+
+	await loadLayers();
 }
 
 run();
