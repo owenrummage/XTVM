@@ -37,7 +37,7 @@ export function selectBus(index?: number) {
 		vm.parameters.Bus(i).Sel.set(0);
 	}
 
-	if (index) vm.parameters.Bus(index).Sel.set(1);
+	if (index !== undefined) vm.parameters.Bus(index).Sel.set(1);
 }
 
 function getLabelByFaderType(type: FADER_TYPES, channel: number) {
