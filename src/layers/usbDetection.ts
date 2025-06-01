@@ -23,10 +23,8 @@ async function disconnectHandler(device: usb.Device) {
 
 function connectHandler(device: usb.Device) {
 	if (isXTouch(device) && !connected) {
-		setTimeout(async () => {
-			setController(new XTouchControl());
-			loadLayers();
-		}, 5000);
+		setController(new XTouchControl());
+		loadLayers();
 	}
 }
 
