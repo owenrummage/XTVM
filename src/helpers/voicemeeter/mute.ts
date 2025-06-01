@@ -133,6 +133,7 @@ export function muteChannelActionListener(e) {
 				controller.channel(e.channel).setButton("MUTE", "SOLID");
 			} else {
 				// No ptt, stay unmuted
+				pttStates[e.channel].state = false;
 				controller.channel(e.channel).setButton("MUTE", "OFF");
 			}
 		}
