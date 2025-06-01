@@ -16,6 +16,7 @@
     "test": "file:",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
+    "usb": "^2.15.0",
     "voicemeeter-connector": "github:ilikestohack/voicemeeter-connector",
     "xtouch-control": "^1.2.3"
   },
