@@ -10,6 +10,10 @@ function setTime() {
 	const minute = currentTime.minute();
 	const second = currentTime.second();
 
+	if (hour === 0) {
+		hour = 12;
+	}
+
 	if (hour > 12) {
 		hour -= 12;
 		timeSection = "P";
