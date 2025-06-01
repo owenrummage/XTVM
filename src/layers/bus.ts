@@ -14,6 +14,7 @@ import {
 } from "../helpers/voicemeeter/fadeListener";
 import { clearTopScreens } from "../helpers/xtctlHelper";
 import { muteChannelActionListener, setMuteButtonLeds } from "../helpers/voicemeeter/mute";
+import { setTopScreen } from "../helpers/topScreen";
 
 let selectedBus = config.defaultBus;
 let hasBusSelected = false;
@@ -50,7 +51,7 @@ function refreshFromVM() {
 	}
 
 	clearTopScreens();
-	controller.screens().setScreensArray(busLabelWords.slice(0, 8), 0);
+	setTopScreen(busLabelWords.slice(0, 8), "layer");
 	setBottomLabelLCDs();
 
 	// Get selected bus

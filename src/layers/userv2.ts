@@ -2,6 +2,7 @@ import { LineType } from "xtouch-control";
 import { config, controller, vm } from "..";
 import { BaseLayer } from "../globals";
 import { getState, goveeMqtt, mqttClient, postRequest } from "../helpers/homeAssistant";
+import { eMuteActive, setEMuteActive } from "../helpers/voicemeeter/eMutePedal";
 
 let curState = false;
 let brightnessPercent = 0;
@@ -57,7 +58,16 @@ function setBrightnessFade(lt: LineType = "BOTTOM") {
 }
 
 async function updateFromHass() {
-	const state = await getState(config.hass.light1.entity_id);
+	let state;
+	try {
+		state = await getState(config.hass.light1.entity_id);
+	} catch (e) {
+		console.log("Error updating from hass:", e);
+		state = {
+			state: "Unavailable",
+		};
+		return;
+	}
 
 	if (state.state === "on") {
 		curState = true;
@@ -90,6 +100,9 @@ async function channelActionListener(e) {
 				}
 				break;
 			}
+			case "pedal1":
+				if (!eMuteActive) sendRGB();
+				break;
 		}
 	} else if (e.state === "keyUp") {
 		switch (e.action) {
@@ -103,6 +116,9 @@ async function channelActionListener(e) {
 
 				break;
 			}
+			case "pedal1":
+				if (!eMuteActive) sendRGB();
+				break;
 		}
 	}
 }
@@ -169,6 +185,7 @@ function mqttStateChange(topic: string, e: Buffer<ArrayBufferLike>) {
 
 function start() {
 	controller.right().setControlButton("User", "SOLID");
+	setEMuteActive(false);
 	controller.addListener("channelAction", channelActionListener);
 	controller.addListener("fade", standardFadeListener);
 
@@ -181,6 +198,7 @@ function start() {
 
 function stop() {
 	controller.right().setControlButton("User", "OFF");
+	setEMuteActive(true);
 	controller.removeListener("channelAction", channelActionListener);
 	controller.removeListener("fade", standardFadeListener);
 

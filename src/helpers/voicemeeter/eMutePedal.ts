@@ -1,5 +1,12 @@
 import { vm } from "../..";
 
+export let eMuteActive = true;
+
+export function setEMuteActive(state: boolean) {
+	eMuteActive = state;
+	return eMuteActive;
+}
+
 let faderStates: Record<number, number> = {
 	1: 0,
 	2: 0,
@@ -14,6 +21,7 @@ let faderStates: Record<number, number> = {
 
 export function eMuteChannelActionListener(e) {
 	if (e.action !== "pedal1") return;
+	if (!eMuteActive) return;
 
 	if (e.state === "keyUp") {
 		for (let channel = 0; channel < 8; channel++) {
