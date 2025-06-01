@@ -34,6 +34,10 @@ export function getActiveLayers() {
 	return activeLayers;
 }
 
+export function setController(controllerIn: XTouchControl) {
+	controller = controllerIn;
+}
+
 // Attach exit handler to close the voicemeeter Dll/API
 function attachExitHandler(vm: Voicemeeter) {
 	process.stdin.resume(); // so the program will not close instantly
