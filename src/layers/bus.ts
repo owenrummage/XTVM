@@ -15,44 +15,16 @@ import {
 import { clearTopScreens } from "../helpers/xtctlHelper";
 import { muteChannelActionListener, setMuteButtonLeds } from "../helpers/voicemeeter/mute";
 import { setTopScreen } from "../helpers/topScreen";
+import { buildSendListener, setSends } from "../helpers/voicemeeter/sends";
+import { setTopScreenVMLabel } from "../helpers/voicemeeter/topScreenLabel";
 
 let selectedBus = config.defaultBus;
 let hasBusSelected = false;
 
 function refreshFromVM() {
-	// Set all of the sends by bus from voicemeeter
-	// TODO: Expand sends to helper
-	for (let i = 0; i < 8; i++) {
-		const vmBusName = VoicemeeterChannelNames[
-			selectedBus
-		] as keyof typeof VoicemeeterChannelNames;
-		const curState = Math.floor(vm.parameters.Strip(i)[vmBusName].get());
-		controller.channel(i + 1).setButton("SEL", curState === 1 ? "SOLID" : "OFF");
-	}
-
+	setSends(FADER_TYPES.STRIP, selectedBus);
 	setMuteButtonLeds();
-
-	// Set Bus Name LCDs
-	// TODO: Expand top LCDs to helper
-	const busLabel = vm.parameters.Bus(selectedBus).Label.get();
-	const words = busLabel.split(" ");
-	const busLabelWords: string[] = [];
-
-	for (const word of words) {
-		if (word.length <= 7) {
-			busLabelWords.push(word);
-		} else {
-			let start = 0;
-			while (start < word.length) {
-				busLabelWords.push(word.substring(start, start + 7));
-				start += 7;
-			}
-		}
-	}
-
-	clearTopScreens();
-	setTopScreen(busLabelWords.slice(0, 8), "layer");
-	setBottomLabelLCDs();
+	setTopScreenVMLabel(FADER_TYPES.BUS, selectedBus);
 
 	// Get selected bus
 	setFLeds();
@@ -97,36 +69,8 @@ function keyDownListener(key) {
 	}
 }
 
-async function channelActionListener(e) {
-	console.log("Channel Action", e);
-	if (e.state === "keyDown") {
-		switch (e.action) {
-			case "select": {
-				// Handle sends from input strips to busses in both voicemeeter and the controller
-				const bus = selectedBus;
-				const vmInChannel = e.channel - 1;
-				const vmBusName = VoicemeeterChannelNames[
-					bus
-				] as keyof typeof VoicemeeterChannelNames;
-
-				const curState = Math.floor(
-					vm.parameters.Strip(vmInChannel)[vmBusName].get()
-				);
-
-				let newState = 0;
-				if (curState === 0) newState = 1; // If 0 then 1 and if 1 stay 0
-
-				vm.parameters.Strip(vmInChannel)[vmBusName].set(newState);
-				controller
-					.channel(e.channel)
-					.setButton("SEL", newState === 1 ? "SOLID" : "OFF");
-				break;
-			}
-		}
-	}
-}
-
 let lastBusVMSelected = false;
+let selectListener;
 
 function start() {
 	controller.right().setControlButton("Busses", "SOLID");
@@ -136,6 +80,8 @@ function start() {
 		lastBusVMSelected = false;
 	}
 
+	selectListener = buildSendListener(() => selectedBus, FADER_TYPES.STRIP);
+
 	setFLeds(("F" + (selectedBus + 1)) as ControlType);
 	vuMeterStripsTask(true);
 
@@ -144,7 +90,8 @@ function start() {
 	refreshFromVM();
 
 	controller.addListener("keyDown", keyDownListener);
-	controller.addListener("channelAction", channelActionListener);
+	// controller.addListener("channelAction", channelActionListener);
+	controller.addListener("channelAction", selectListener);
 	controller.addListener("channelAction", muteChannelActionListener);
 	vmEventEmitter.addListener("change", refreshFromVM);
 }
@@ -159,7 +106,8 @@ function stop() {
 
 	controller.removeListener("keyDown", keyDownListener);
 	takeDownVMFadeInputListener();
-	controller.removeListener("channelAction", channelActionListener);
+	// controller.removeListener("channelAction", channelActionListener);
+	controller.removeListener("channelAction", selectListener);
 	controller.removeListener("channelAction", muteChannelActionListener);
 	vmEventEmitter.removeListener("change", refreshFromVM);
 
