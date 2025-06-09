@@ -12,7 +12,7 @@ import {
 	setupVMFadeInputListener,
 	takeDownVMFadeInputListener,
 } from "../helpers/voicemeeter/fadeListener";
-import { clearTopScreens } from "../helpers/xtctlHelper";
+import { clearTopScreens, isFKey } from "../helpers/xtctlHelper";
 import { muteChannelActionListener, setMuteButtonLeds } from "../helpers/voicemeeter/mute";
 import { setTopScreen } from "../helpers/topScreen";
 import { buildSendListener, setSends } from "../helpers/voicemeeter/sends";
