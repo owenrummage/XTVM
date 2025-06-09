@@ -8,7 +8,7 @@ import {
 	setupVMFadeInputListener,
 	takeDownVMFadeInputListener,
 } from "../helpers/voicemeeter/fadeListener";
-import { clearTopScreens } from "../helpers/xtctlHelper";
+import { clearTopScreens, isFKey } from "../helpers/xtctlHelper";
 import { muteChannelActionListener, setMuteButtonLeds } from "../helpers/voicemeeter/mute";
 import { vuMeterBusesTask } from "../helpers/voicemeeter/vuMeters";
 import { ControlType } from "xtouch-control";
@@ -36,7 +36,7 @@ function selectStrip(input: number) {
 
 // Listen for F keys for bus change
 function keyDownListener(key) {
-	if (key.action.startsWith("F")) {
+	if (isFKey(key)) {
 		const index = parseInt(key.action.substring(1)) - 1; // Extract index from F key
 		selectStrip(index);
 	}

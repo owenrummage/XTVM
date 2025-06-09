@@ -45,7 +45,7 @@ function refreshFromVM() {
 
 // Listen for F keys for bus change
 function keyDownListener(key) {
-	if (key.action.startsWith("F")) {
+	if (isFKey(key)) {
 		const index = parseInt(key.action.substring(1)) - 1; // Extract index from F key
 		if (hasBusSelected && selectedBus === index) {
 			hasBusSelected = false;
