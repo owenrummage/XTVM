@@ -12,4 +12,5 @@ export enum VoicemeeterChannelNames {
 export enum FADER_TYPES {
 	BUS,
 	STRIP,
+	NONE,
 }

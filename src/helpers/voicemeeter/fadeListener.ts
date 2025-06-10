@@ -47,7 +47,7 @@ async function fadeListener(key) {
 	console.log(`Fade: ${key.channel} - ${key.value}`);
 	const dbValue = convertToDB(key.value);
 	console.log(dbValue);
-	if (key.channel === 9) {
+	if (key.channel === 9 && mainFaderType !== FADER_TYPES.NONE) {
 		// Use the 9th output fader for the selected bus
 		if (fadeTimeouts[key.channel]) {
 			clearTimeout(fadeTimeouts[key.channel]!);
@@ -61,7 +61,7 @@ async function fadeListener(key) {
 		// Set the main fader gain
 		await setVMFaderByType(mainFaderType, mainFaderChannel, dbValue);
 		console.log(`Main Gain: ${dbValue}`);
-	} else {
+	} else if (leftFadersType !== FADER_TYPES.NONE) {
 		// Use 1-8 faders
 		await setVMFaderByType(leftFadersType, key.channel - 1, dbValue);
 

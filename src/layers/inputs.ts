@@ -25,7 +25,7 @@ function start() {
 
 	vuMeterStripsTask(true);
 
-	setupVMFadeInputListener(FADER_TYPES.STRIP, FADER_TYPES.BUS, 10);
+	setupVMFadeInputListener(FADER_TYPES.STRIP, FADER_TYPES.NONE, 10);
 
 	refreshFromVM();
 
