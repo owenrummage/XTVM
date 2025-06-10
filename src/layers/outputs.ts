@@ -5,6 +5,7 @@ import { FADER_TYPES } from "../helpers/voicemeeter/constantsAndTypes";
 import { resetFaderStates } from "../helpers/voicemeeter/faderChecks";
 import {
 	runConfiguredFaderChecks,
+	setFaderTypes,
 	setupVMFadeInputListener,
 	takeDownVMFadeInputListener,
 } from "../helpers/voicemeeter/fadeListener";
@@ -30,7 +31,7 @@ function refreshFromVM() {
 function selectStrip(input: number) {
 	selectedVMChannel = input;
 	setFLeds(("F" + (selectedVMChannel + 1).toString()) as ControlType);
-	setupVMFadeInputListener(FADER_TYPES.BUS, FADER_TYPES.STRIP, selectedVMChannel);
+	setFaderTypes(FADER_TYPES.BUS, FADER_TYPES.STRIP, selectedVMChannel);
 	refreshFromVM();
 }
 
@@ -39,6 +40,7 @@ function keyDownListener(key) {
 	if (isFKey(key)) {
 		const index = parseInt(key.action.substring(1)) - 1; // Extract index from F key
 		selectStrip(index);
+		return;
 	}
 }
 
@@ -52,7 +54,8 @@ function start() {
 	selectListener = buildSendListener(() => selectedVMChannel, FADER_TYPES.BUS);
 
 	selectStrip(selectedVMChannel);
-	// setupVMFadeInputListener(FADER_TYPES.BUS, FADER_TYPES.STRIP, selectedVMChannel);
+
+	setupVMFadeInputListener(FADER_TYPES.BUS, FADER_TYPES.STRIP, selectedVMChannel);
 
 	refreshFromVM();
 
@@ -72,6 +75,8 @@ function stop() {
 	controller.removeListener("channelAction", selectListener);
 	controller.removeListener("channelAction", muteChannelActionListener);
 	vmEventEmitter.removeListener("change", refreshFromVM);
+
+	setFLeds();
 
 	resetFaderStates();
 }
